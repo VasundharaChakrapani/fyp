@@ -1,0 +1,55 @@
+{
+  "experiment": "binary_movement_feature_baseline",
+  "target_classes": {
+    "1": "Normal Fidgety",
+    "2": "Absent Fidgety"
+  },
+  "validation_records": 93,
+  "feature_count": 38,
+  "accuracy": 0.7526881720430108,
+  "balanced_accuracy": 0.7734939759036145,
+  "roc_auc": 0.810843373493976,
+  "confusion_matrix_labels": [
+    1,
+    2
+  ],
+  "confusion_matrix": [
+    [
+      62,
+      21
+    ],
+    [
+      2,
+      8
+    ]
+  ],
+  "classification_report": {
+    "Normal Fidgety": {
+      "precision": 0.96875,
+      "recall": 0.7469879518072289,
+      "f1-score": 0.8435374149659864,
+      "support": 83.0
+    },
+    "Absent Fidgety": {
+      "precision": 0.27586206896551724,
+      "recall": 0.8,
+      "f1-score": 0.41025641025641024,
+      "support": 10.0
+    },
+    "accuracy": 0.7526881720430108,
+    "macro avg": {
+      "precision": 0.6223060344827587,
+      "recall": 0.7734939759036145,
+      "f1-score": 0.6268969126111983,
+      "support": 93.0
+    },
+    "weighted avg": {
+      "precision": 0.8942459213941416,
+      "recall": 0.7526881720430108,
+      "f1-score": 0.7969480596208707,
+      "support": 93.0
+    }
+  },
+  "important_features_method": "validation permutation importance",
+  "clinical_validation": false
+}

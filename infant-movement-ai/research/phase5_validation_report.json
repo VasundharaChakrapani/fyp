@@ -1,0 +1,146 @@
+{
+  "phase": 5,
+  "status": "Ensemble inference and aggregate reproduction succeeded; final input-alignment validation remains unresolved.",
+  "ensemble": {
+    "candidate_ids": [
+      "19",
+      "21",
+      "30",
+      "33",
+      "37"
+    ],
+    "folds_per_candidate": 7,
+    "successful_runs": 35,
+    "failed_runs": 0,
+    "prediction_matrix_shape": [
+      35,
+      4
+    ],
+    "threshold_used": 0.3614
+  },
+  "reconstructed_aggregate": {
+    "window_medians": [
+      0.003983229398727417,
+      0.005346754100173712,
+      0.06102114915847778,
+      0.0008427057764492929
+    ],
+    "window_q25": [
+      0.0012465761974453926,
+      0.0006177353352541104,
+      0.002327586058527231,
+      3.673899442446782e-07
+    ],
+    "window_q75": [
+      0.028650883585214615,
+      0.02239573746919632,
+      0.1566627472639084,
+      0.6432150900363922
+    ],
+    "overall_risk": 0.004664991749450564,
+    "overall_lower": 0.0011830087460111827,
+    "overall_upper": 0.053653571754693985,
+    "classification_uncertainty": 0
+  },
+  "window_disagreement": [
+    {
+      "window": 1,
+      "minimum": 4.094380585684121e-07,
+      "q25": 0.0012465761974453926,
+      "median": 0.003983229398727417,
+      "q75": 0.028650883585214615,
+      "maximum": 0.6041701436042786,
+      "standard_deviation": 0.13470084688674144,
+      "predictions_at_or_above_threshold": 3
+    },
+    {
+      "window": 2,
+      "minimum": 6.091393345286633e-08,
+      "q25": 0.0006177353352541104,
+      "median": 0.005346754100173712,
+      "q75": 0.02239573746919632,
+      "maximum": 0.4978022575378418,
+      "standard_deviation": 0.11666338353157756,
+      "predictions_at_or_above_threshold": 2
+    },
+    {
+      "window": 3,
+      "minimum": 1.4337462744151708e-05,
+      "q25": 0.002327586058527231,
+      "median": 0.06102114915847778,
+      "q75": 0.1566627472639084,
+      "maximum": 0.839687705039978,
+      "standard_deviation": 0.20743198960876116,
+      "predictions_at_or_above_threshold": 5
+    },
+    {
+      "window": 4,
+      "minimum": 1.0704246231222528e-20,
+      "q25": 3.673899442446782e-07,
+      "median": 0.0008427057764492929,
+      "q75": 0.6432150900363922,
+      "maximum": 1.0,
+      "standard_deviation": 0.40883904176451563,
+      "predictions_at_or_above_threshold": 11
+    }
+  ],
+  "candidate_level_medians": [
+    {
+      "candidate": "search_19",
+      "window_medians": [
+        0.006383830681443214,
+        0.0023627306800335646,
+        0.06102114915847778,
+        1.9550257093214896e-06
+      ]
+    },
+    {
+      "candidate": "search_21",
+      "window_medians": [
+        0.003983229398727417,
+        0.0010096586775034666,
+        0.0024526373017579317,
+        0.9970588684082031
+      ]
+    },
+    {
+      "candidate": "search_30",
+      "window_medians": [
+        0.001763960812240839,
+        0.001723943860270083,
+        0.07318352162837982,
+        6.858633128103975e-08
+      ]
+    },
+    {
+      "candidate": "search_33",
+      "window_medians": [
+        0.02112879976630211,
+        0.026457984000444412,
+        0.3539803922176361,
+        0.0008427057764492929
+      ]
+    },
+    {
+      "candidate": "search_37",
+      "window_medians": [
+        0.003695222083479166,
+        0.010914907790720463,
+        0.019973337650299072,
+        0.6185392141342163
+      ]
+    }
+  ],
+  "findings": [
+    "All 35 candidate/fold inference runs completed successfully.",
+    "Reconstructed aggregate scores closely match the previously saved risk CSV.",
+    "Window 4 shows substantial disagreement between candidate models.",
+    "Model disagreement intervals are not established as calibrated clinical confidence intervals.",
+    "No clinical validity claim is made."
+  ],
+  "remaining_validation": [
+    "Verify that the tracked coordinates correspond frame-by-frame to the intended source video.",
+    "Document the preprocessing and ensemble aggregation used.",
+    "Retain the observed window 4 disagreement as a limitation for interpretation."
+  ]
+}

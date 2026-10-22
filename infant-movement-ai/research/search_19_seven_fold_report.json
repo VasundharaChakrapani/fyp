@@ -1,0 +1,38 @@
+{
+  "candidate": "search_19",
+  "checkpoint_group": "crossval_19",
+  "folds_evaluated": 7,
+  "windows": 4,
+  "input_frames": 413,
+  "input_shape": [
+    1,
+    2,
+    413,
+    29
+  ],
+  "window_size": 225,
+  "parts_distance": 75,
+  "preprocessing": "Repository main.py coordinate preprocessing",
+  "aggregation": "Median across seven folds per window",
+  "median_per_window": [
+    0.006383830681443214,
+    0.0023627306800335646,
+    0.06102114915847778,
+    1.9550257093214896e-06
+  ],
+  "q25_per_window": [
+    0.003545489103998989,
+    0.0008767602266743779,
+    0.019585847854614258,
+    1.1040537364892522e-07
+  ],
+  "q75_per_window": [
+    0.09293118305504322,
+    0.04242108832113445,
+    0.22703667730093002,
+    1.42912256251293e-05
+  ],
+  "all_predictions_finite": true,
+  "clinical_validation": false,
+  "created_utc": "2026-10-21T04:41:27.081356+00:00"
+}

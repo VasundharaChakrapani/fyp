@@ -1,0 +1,478 @@
+{
+  "candidate_ids": [
+    "19",
+    "21",
+    "30",
+    "33",
+    "37"
+  ],
+  "folds_per_candidate": 7,
+  "successful_runs": 35,
+  "input_shape": [
+    1,
+    2,
+    413,
+    29
+  ],
+  "window_size": 225,
+  "parts_distance": 75,
+  "prediction_threshold": 0.3614,
+  "ensemble_shape": [
+    35,
+    4
+  ],
+  "window_cp_risk": [
+    0.003983229398727417,
+    0.005346754100173712,
+    0.06102114915847778,
+    0.0008427057764492929
+  ],
+  "window_cp_risk_lower": [
+    0.0012465761974453926,
+    0.0006177353352541104,
+    0.002327586058527231,
+    3.673899442446782e-07
+  ],
+  "window_cp_risk_upper": [
+    0.028650883585214615,
+    0.02239573746919632,
+    0.1566627472639084,
+    0.6432150900363922
+  ],
+  "window_uncertainty": [
+    0,
+    0,
+    0,
+    1
+  ],
+  "cp_risk": 0.004664991749450564,
+  "cp_risk_lower": 0.0011830087460111827,
+  "cp_risk_upper": 0.053653571754693985,
+  "classification_uncertainty": 0,
+  "model_level_window_medians": [
+    0.0008820710791042075,
+    0.16087792813777924,
+    0.059882258996367455,
+    0.003288618929218501,
+    0.0036791031598113477,
+    0.21032465994358063,
+    0.0009005115716718137,
+    0.0005784185414086096,
+    0.04053791705518961,
+    0.0016089749988168478,
+    0.11340020690113306,
+    0.007208092603832483,
+    0.0014655059203505516,
+    0.0001958244884008309,
+    2.351759960106392e-07,
+    0.5349725633859634,
+    0.0361606664955616,
+    0.0014970593329053372,
+    0.03953566332347691,
+    0.004272167308954522,
+    0.0008582869850215502,
+    0.00033535280817886814,
+    0.13474745117127895,
+    0.3737964779138565,
+    0.02379339188337326,
+    0.0022129530552774668,
+    0.4641360193490982,
+    3.006852148246253e-05,
+    0.00014393497076525819,
+    0.012686766916885972,
+    0.020999901928007603,
+    0.08261972293257713,
+    0.010741815436631441,
+    0.009908169507980347,
+    0.047424884513020515
+  ],
+  "preprocessing_note": "Used the existing preprocessed input in this runtime; this cell did not independently revalidate video-coordinate alignment.",
+  "clinical_validation": "Not established by this inference reproduction.",
+  "runs": [
+    {
+      "candidate": "19",
+      "fold": 1,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_19/val1",
+      "predictions": [
+        0.0012928851647302508,
+        0.0004712569934781641,
+        0.01388581097126007,
+        5.297378646851314e-10
+      ]
+    },
+    {
+      "candidate": "19",
+      "fold": 2,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_19/val2",
+      "predictions": [
+        0.14559327065944672,
+        0.005346754100173712,
+        0.17616258561611176,
+        0.208930104970932
+      ]
+    },
+    {
+      "candidate": "19",
+      "fold": 3,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_19/val3",
+      "predictions": [
+        0.040269095450639725,
+        0.07949542254209518,
+        0.2779107689857483,
+        1.0704246231222528e-20
+      ]
+    },
+    {
+      "candidate": "19",
+      "fold": 4,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_19/val4",
+      "predictions": [
+        0.005798093043267727,
+        0.0007791448151692748,
+        0.06102114915847778,
+        1.9550257093214896e-06
+      ]
+    },
+    {
+      "candidate": "19",
+      "fold": 5,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_19/val5",
+      "predictions": [
+        0.006383830681443214,
+        0.000974375638179481,
+        0.025285884737968445,
+        7.175325208663708e-06
+      ]
+    },
+    {
+      "candidate": "19",
+      "fold": 6,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_19/val6",
+      "predictions": [
+        0.22997379302978516,
+        0.1906755268573761,
+        0.4796521067619324,
+        2.1407126041594893e-05
+      ]
+    },
+    {
+      "candidate": "19",
+      "fold": 7,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_19/val7",
+      "predictions": [
+        0.0012002672301605344,
+        0.0023627306800335646,
+        0.0006007559131830931,
+        2.202810094331653e-07
+      ]
+    },
+    {
+      "candidate": "21",
+      "fold": 1,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_21/val1",
+      "predictions": [
+        0.004671680741012096,
+        0.00016920942289289087,
+        0.0009876276599243283,
+        5.144988790561911e-07
+      ]
+    },
+    {
+      "candidate": "21",
+      "fold": 2,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_21/val2",
+      "predictions": [
+        0.003983229398727417,
+        0.007700884714722633,
+        0.07337494939565659,
+        0.9999921321868896
+      ]
+    },
+    {
+      "candidate": "21",
+      "fold": 3,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_21/val3",
+      "predictions": [
+        0.0002213553962064907,
+        0.0010096586775034666,
+        0.002208291320130229,
+        0.9970588684082031
+      ]
+    },
+    {
+      "candidate": "21",
+      "fold": 4,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_21/val4",
+      "predictions": [
+        0.004566414747387171,
+        0.015224488452076912,
+        0.2115759253501892,
+        0.9998824596405029
+      ]
+    },
+    {
+      "candidate": "21",
+      "fold": 5,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_21/val5",
+      "predictions": [
+        0.006561240181326866,
+        0.0018134181154891849,
+        0.12420175969600677,
+        0.0078549450263381
+      ]
+    },
+    {
+      "candidate": "21",
+      "fold": 6,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_21/val6",
+      "predictions": [
+        0.0004783745389431715,
+        0.00013797066640108824,
+        0.0024526373017579317,
+        0.6678909659385681
+      ]
+    },
+    {
+      "candidate": "21",
+      "fold": 7,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_21/val7",
+      "predictions": [
+        4.4680007704300806e-05,
+        3.2230916986009106e-05,
+        0.00034696896909736097,
+        1.0
+      ]
+    },
+    {
+      "candidate": "30",
+      "fold": 1,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_30/val1",
+      "predictions": [
+        4.094380585684121e-07,
+        6.091393345286633e-08,
+        1.4337462744151708e-05,
+        4.629318389265608e-15
+      ]
+    },
+    {
+      "candidate": "30",
+      "fold": 2,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_30/val2",
+      "predictions": [
+        0.6041701436042786,
+        0.4657749831676483,
+        0.6176896691322327,
+        0.00016491787391714752
+      ]
+    },
+    {
+      "candidate": "30",
+      "fold": 3,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_30/val3",
+      "predictions": [
+        0.03532904386520386,
+        0.03699228912591934,
+        0.13716290891170502,
+        0.00012755030184052885
+      ]
+    },
+    {
+      "candidate": "30",
+      "fold": 4,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_30/val4",
+      "predictions": [
+        0.0022299049887806177,
+        0.0007642136770300567,
+        0.0024468807969242334,
+        6.858633128103975e-08
+      ]
+    },
+    {
+      "candidate": "30",
+      "fold": 5,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_30/val5",
+      "predictions": [
+        0.001763960812240839,
+        0.001723943860270083,
+        0.07730736583471298,
+        0.9316229820251465
+      ]
+    },
+    {
+      "candidate": "30",
+      "fold": 6,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_30/val6",
+      "predictions": [
+        0.0006015509716235101,
+        0.007942783646285534,
+        0.07318352162837982,
+        4.853125679105119e-10
+      ]
+    },
+    {
+      "candidate": "30",
+      "fold": 7,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_30/val7",
+      "predictions": [
+        0.0015025738393887877,
+        0.00021400013065431267,
+        0.011475907638669014,
+        7.758982345507093e-11
+      ]
+    },
+    {
+      "candidate": "33",
+      "fold": 1,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_33/val1",
+      "predictions": [
+        0.00047271745279431343,
+        0.00019798816356342286,
+        0.0007088656420819461,
+        5.071056352612402e-10
+      ]
+    },
+    {
+      "candidate": "33",
+      "fold": 2,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_33/val2",
+      "predictions": [
+        0.22330865263938904,
+        0.04618624970316887,
+        0.5946194529533386,
+        0.0008427057764492929
+      ]
+    },
+    {
+      "candidate": "33",
+      "fold": 3,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_33/val3",
+      "predictions": [
+        0.36156922578811646,
+        0.4978022575378418,
+        0.38602373003959656,
+        0.00013888158719055355
+      ]
+    },
+    {
+      "candidate": "33",
+      "fold": 4,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_33/val4",
+      "predictions": [
+        0.02112879976630211,
+        0.026457984000444412,
+        0.3539803922176361,
+        9.43283851029264e-09
+      ]
+    },
+    {
+      "candidate": "33",
+      "fold": 5,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_33/val5",
+      "predictions": [
+        0.003216022625565529,
+        0.0012098834849894047,
+        0.0003482481697574258,
+        0.1451537013053894
+      ]
+    },
+    {
+      "candidate": "33",
+      "fold": 6,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_33/val6",
+      "predictions": [
+        0.38139066100120544,
+        0.21013230085372925,
+        0.839687705039978,
+        0.546881377696991
+      ]
+    },
+    {
+      "candidate": "33",
+      "fold": 7,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_33/val7",
+      "predictions": [
+        1.710441028990317e-05,
+        8.659512218400778e-07,
+        4.303263267502189e-05,
+        0.0012686935951933265
+      ]
+    },
+    {
+      "candidate": "37",
+      "fold": 1,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_37/val1",
+      "predictions": [
+        6.037280763848685e-05,
+        1.104331295209704e-05,
+        0.00022749713389202952,
+        0.0012741058599203825
+      ]
+    },
+    {
+      "candidate": "37",
+      "fold": 2,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_37/val2",
+      "predictions": [
+        0.0028294038493186235,
+        0.005400196183472872,
+        0.019973337650299072,
+        1.0
+      ]
+    },
+    {
+      "candidate": "37",
+      "fold": 3,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_37/val3",
+      "predictions": [
+        0.021972723305225372,
+        0.020027080550789833,
+        0.08729978650808334,
+        1.7301210391451605e-05
+      ]
+    },
+    {
+      "candidate": "37",
+      "fold": 4,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_37/val4",
+      "predictions": [
+        0.05222120136022568,
+        0.024764394387602806,
+        0.11301824450492859,
+        0.999993085861206
+      ]
+    },
+    {
+      "candidate": "37",
+      "fold": 5,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_37/val5",
+      "predictions": [
+        0.003695222083479166,
+        0.010914907790720463,
+        0.01056872308254242,
+        0.7796796560287476
+      ]
+    },
+    {
+      "candidate": "37",
+      "fold": 6,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_37/val6",
+      "predictions": [
+        0.00323189003393054,
+        0.019992634654045105,
+        0.00616243202239275,
+        0.013653906993567944
+      ]
+    },
+    {
+      "candidate": "37",
+      "fold": 7,
+      "experiment_dir": "/content/DeepInMotion_lfs_recovery/models/predict/CP/experiments/crossval_37/val7",
+      "predictions": [
+        0.020258087664842606,
+        0.005359909497201443,
+        0.07459168136119843,
+        0.6185392141342163
+      ]
+    }
+  ]
+}
