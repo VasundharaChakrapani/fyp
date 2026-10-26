@@ -23,21 +23,20 @@ const ENDPOINTS = {
   consistency: "/api/joint-consistency",
   velocity: "/api/velocity-perturbations",
   windows: "/api/window-sensitivity",
+  integratedGradients: "/api/explainability/integrated-gradients",
+  igConvergence: "/api/explainability/ig-convergence",
+  igJointConvergence: "/api/explainability/ig-joint-convergence",
+  methodComparison: "/api/explainability/method-comparison",
 };
-
 
 async function fetchRecords(endpoint) {
   const response = await fetch(`${API}${endpoint}`);
 
   if (!response.ok) {
-    throw new Error(
-      `Request failed (${response.status}): ${endpoint}`
-    );
+    throw new Error(`Request failed (${response.status}): ${endpoint}`);
   }
 
   const json = await response.json();
-
-  // Support both response formats used by the API.
   const records = json.records ?? json.results;
 
   if (!Array.isArray(records)) {
@@ -48,7 +47,6 @@ async function fetchRecords(endpoint) {
 
   return records;
 }
-
 
 function Panel({ title, subtitle, children }) {
   return (
@@ -77,6 +75,7 @@ function DownloadCsv({ filename, rows }) {
     if (!rows.length) return;
 
     const columns = Object.keys(rows[0]);
+
     const escapeCell = (value) => {
       const text = value == null ? "" : String(value);
       return `"${text.replace(/"/g, '""')}"`;
@@ -92,6 +91,7 @@ function DownloadCsv({ filename, rows }) {
     const blob = new Blob(["\uFEFF" + csv], {
       type: "text/csv;charset=utf-8;",
     });
+
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -101,13 +101,19 @@ function DownloadCsv({ filename, rows }) {
   }
 
   return (
-    <button className="re-button" onClick={download} disabled={!rows.length}>
+    <button
+      className="re-button"
+      onClick={download}
+      disabled={!rows.length}
+    >
       Download CSV
     </button>
   );
 }
 
 function formatNumber(value, digits = 5) {
+  if (value == null || value === "") return "—";
+
   const number = Number(value);
   return Number.isFinite(number) ? number.toFixed(digits) : "—";
 }
@@ -118,7 +124,15 @@ export default function ResearchExplorer() {
     consistency: [],
     velocity: [],
     windows: [],
+    integratedGradients: [],
+    igConvergence: [],
+    igJointConvergence: [],
+    methodComparison: [],
   });
+
+  const [comparisonSummary, setComparisonSummary] = useState(null);
+  const [comparisonError, setComparisonError] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [windowNumber, setWindowNumber] = useState("1");
@@ -132,9 +146,16 @@ export default function ResearchExplorer() {
     async function load() {
       setLoading(true);
       setError("");
+      setComparisonError("");
+
+      // Fetch the ordinary datasets separately from the comparison
+      // endpoint because the latter also returns summary metrics.
+      const ordinaryEndpoints = Object.entries(ENDPOINTS).filter(
+        ([key]) => key !== "methodComparison"
+      );
 
       const results = await Promise.allSettled(
-        Object.entries(ENDPOINTS).map(async ([key, endpoint]) => [
+        ordinaryEndpoints.map(async ([key, endpoint]) => [
           key,
           await fetchRecords(endpoint),
         ])
@@ -150,11 +171,52 @@ export default function ResearchExplorer() {
           const [key, records] = result.value;
           nextData[key] = records;
         } else {
-          failures.push(result.reason?.message || "Unknown request error");
+          failures.push(
+            result.reason?.message || "Unknown request error"
+          );
         }
       }
 
       setData((previous) => ({ ...previous, ...nextData }));
+
+      // Fetch the complete comparison response so its metrics
+      // are available as well as its joint-level records.
+      try {
+        const response = await fetch(
+          `${API}${ENDPOINTS.methodComparison}`
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Comparison request failed (${response.status})`
+          );
+        }
+
+        const json = await response.json();
+
+        if (!Array.isArray(json.records)) {
+          throw new Error(
+            "Comparison response does not contain a records array."
+          );
+        }
+
+        if (active) {
+          setComparisonSummary(json);
+          setData((previous) => ({
+            ...previous,
+            methodComparison: json.records,
+          }));
+        }
+      } catch (err) {
+        if (active) {
+          setComparisonError(
+            err.message || "Could not load method comparison."
+          );
+          setComparisonSummary(null);
+        }
+      }
+
+      if (!active) return;
 
       if (failures.length) {
         setError(
@@ -166,6 +228,7 @@ export default function ResearchExplorer() {
     }
 
     load();
+
     return () => {
       active = false;
     };
@@ -173,6 +236,7 @@ export default function ResearchExplorer() {
 
   const jointColumns = useMemo(() => {
     if (!data.explainability.length) return [];
+
     return Object.keys(data.explainability[0]).filter(
       (column) => column.toLowerCase() !== "window"
     );
@@ -192,6 +256,7 @@ export default function ResearchExplorer() {
   }, [data.explainability, jointColumns, windowNumber]);
 
   const topJoint = explanationRows[0];
+
   const meanScore = explanationRows.length
     ? explanationRows.reduce((sum, item) => sum + item.score, 0) /
       explanationRows.length
@@ -213,7 +278,8 @@ export default function ResearchExplorer() {
   const filteredVelocity = useMemo(
     () =>
       data.velocity.filter(
-        (row) => selectedJoint === "All joints" || row.Joint === selectedJoint
+        (row) =>
+          selectedJoint === "All joints" || row.Joint === selectedJoint
       ),
     [data.velocity, selectedJoint]
   );
@@ -241,6 +307,94 @@ export default function ResearchExplorer() {
     [data.windows]
   );
 
+  const integratedGradientsRows = useMemo(
+    () =>
+      [...data.integratedGradients]
+        .map((row) => ({
+          ...row,
+          ig_absolute_score: Number(row.ig_absolute_score),
+          ig_normalized_score: Number(row.ig_normalized_score),
+        }))
+        .filter(
+          (row) =>
+            row.joint &&
+            Number.isFinite(row.ig_absolute_score) &&
+            Number.isFinite(row.ig_normalized_score)
+        )
+        .sort((a, b) => b.ig_absolute_score - a.ig_absolute_score),
+    [data.integratedGradients]
+  );
+
+  const topIGJoint = integratedGradientsRows[0];
+
+  const igConvergenceRows = useMemo(
+    () =>
+      [...data.igConvergence]
+        .map((row) => ({
+          ...row,
+          ig_steps: Number(row.ig_steps),
+          completeness_delta: Number(row.completeness_delta),
+          joint_attribution_change:
+            row.joint_attribution_change == null ||
+            row.joint_attribution_change === ""
+              ? null
+              : Number(row.joint_attribution_change),
+          top_joint_score: Number(row.top_joint_score),
+        }))
+        .filter(
+          (row) =>
+            Number.isFinite(row.ig_steps) &&
+            Number.isFinite(row.completeness_delta)
+        )
+        .sort((a, b) => a.ig_steps - b.ig_steps),
+    [data.igConvergence]
+  );
+
+  const latestIGConvergence =
+    igConvergenceRows[igConvergenceRows.length - 1];
+
+  const finalAttributionChange = latestIGConvergence
+    ? latestIGConvergence.joint_attribution_change
+    : null;
+
+  const igConvergenceChart = useMemo(
+    () =>
+      igConvergenceRows.map((row) => ({
+        ...row,
+        stepsLabel: `${row.ig_steps} steps`,
+      })),
+    [igConvergenceRows]
+  );
+
+  const comparisonRows = useMemo(
+    () =>
+      [...data.methodComparison]
+        .map((row) => ({
+          ...row,
+          gradcam_score: Number(row.gradcam_score),
+          ig_score: Number(row.ig_score),
+          gradcam_rank: Number(row.gradcam_rank),
+          ig_rank: Number(row.ig_rank),
+        }))
+        .filter(
+          (row) =>
+            row.joint &&
+            Number.isFinite(row.gradcam_score) &&
+            Number.isFinite(row.ig_score)
+        )
+        .sort((a, b) => a.gradcam_rank - b.gradcam_rank),
+    [data.methodComparison]
+  );
+
+  const comparisonChartRows = useMemo(
+    () =>
+      comparisonRows.map((row) => ({
+        ...row,
+        jointLabel: row.joint.replaceAll("_", " "),
+      })),
+    [comparisonRows]
+  );
+
   if (loading) {
     return <div className="re-status">Loading research datasets…</div>;
   }
@@ -250,10 +404,11 @@ export default function ResearchExplorer() {
       <header className="re-header">
         <div>
           <p className="re-eyebrow">RESEARCH WORKSPACE</p>
-          <h2>Explainability & Perturbation Explorer</h2>
+          <h2>Explainability &amp; Perturbation Explorer</h2>
           <p>
-            Explore recorded joint-level explanations, kinematic perturbations,
-            and movement-window sensitivity.
+            Explore recorded joint-level explanations, Integrated
+            Gradients, kinematic perturbations, and movement-window
+            sensitivity.
           </p>
         </div>
         <span className="re-status-pill">Saved experiment results</span>
@@ -264,6 +419,8 @@ export default function ResearchExplorer() {
       <div className="re-tabs">
         {[
           ["explainability", "Joint explanations"],
+          ["integratedGradients", "Integrated Gradients"],
+          ["methodComparison", "Grad-CAM vs IG"],
           ["consistency", "Joint consistency"],
           ["velocity", "Velocity lab"],
           ["windows", "Window sensitivity"],
@@ -323,6 +480,7 @@ export default function ResearchExplorer() {
                   ))}
                 </select>
               </label>
+
               <DownloadCsv
                 filename={`gradcam-window-${windowNumber}.csv`}
                 rows={explanationRows}
@@ -345,20 +503,473 @@ export default function ResearchExplorer() {
                       width={145}
                       tick={{ fontSize: 11 }}
                     />
-                    <Tooltip formatter={(value) => formatNumber(value, 6)} />
-                    <Bar dataKey="score" name="Grad-CAM score" fill="#6d75df" />
+                    <Tooltip
+                      formatter={(value) => formatNumber(value, 6)}
+                    />
+                    <Bar
+                      dataKey="score"
+                      name="Grad-CAM score"
+                      fill="#6d75df"
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             ) : (
               <p>No explanation scores are available for this window.</p>
             )}
+
             <p className="re-note">
-              These are saved model explanation scores, not clinical measures.
-              The chart displays the 15 highest-scoring joints for the selected
-              window.
+              These are saved model explanation scores, not clinical
+              measures. The chart displays the 15 highest-scoring joints
+              for the selected window.
             </p>
           </Panel>
+        </>
+      )}
+
+      {section === "integratedGradients" && (
+        <>
+          <div className="re-metrics">
+            <Metric
+              label="Joints attributed"
+              value={integratedGradientsRows.length || "—"}
+              detail="Joint scores in the exported IG file"
+            />
+            <Metric
+              label="Highest-attribution joint"
+              value={topIGJoint?.joint || "—"}
+              detail={
+                topIGJoint
+                  ? `Absolute score: ${formatNumber(
+                      topIGJoint.ig_absolute_score,
+                      6
+                    )}`
+                  : "No IG results loaded"
+              }
+            />
+            <Metric
+              label="Normalized top attribution"
+              value={
+                topIGJoint
+                  ? `${formatNumber(
+                      topIGJoint.ig_normalized_score * 100,
+                      2
+                    )}%`
+                  : "—"
+              }
+              detail="Share of summed absolute attributions"
+            />
+            <Metric
+              label="Scope"
+              value="1 window"
+              detail="First movement window only"
+            />
+          </div>
+
+          <Panel
+            title="Integrated Gradients — Joint Attribution"
+            subtitle="Absolute attribution scores aggregated across feature channels and time for the first movement window."
+          >
+            <div className="re-controls">
+              <span>{integratedGradientsRows.length} joints</span>
+              <DownloadCsv
+                filename="integrated-gradients-joint-attributions.csv"
+                rows={integratedGradientsRows}
+              />
+            </div>
+
+            {integratedGradientsRows.length ? (
+              <>
+                <div className="re-chart">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={integratedGradientsRows.slice(0, 15)}
+                      layout="vertical"
+                      margin={{
+                        left: 15,
+                        right: 24,
+                        top: 5,
+                        bottom: 5,
+                      }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis
+                        dataKey="joint"
+                        type="category"
+                        width={145}
+                        tick={{ fontSize: 11 }}
+                      />
+                      <Tooltip
+                        formatter={(value) => formatNumber(value, 6)}
+                      />
+                      <Bar
+                        dataKey="ig_absolute_score"
+                        name="Absolute IG attribution"
+                        fill="#d97757"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="re-table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Joint</th>
+                        <th>Absolute attribution</th>
+                        <th>Normalized attribution</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {integratedGradientsRows.map((row) => (
+                        <tr key={row.joint}>
+                          <td>{row.joint}</td>
+                          <td>
+                            {formatNumber(row.ig_absolute_score, 6)}
+                          </td>
+                          <td>
+                            {formatNumber(row.ig_normalized_score, 6)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : (
+              <p>
+                No Integrated Gradients results are available. Check that
+                the CSV exists in backend/data and that the API endpoint
+                is running.
+              </p>
+            )}
+          </Panel>
+
+          <Panel
+            title="Integrated Gradients — Convergence"
+            subtitle="Compare attribution stability and completeness as the integration step count increases."
+          >
+            <div className="re-metrics">
+              <Metric
+                label="Step counts completed"
+                value={igConvergenceRows.length || "—"}
+                detail="Expected: 50, 100, and 200"
+              />
+              <Metric
+                label="Top joint at 200 steps"
+                value={latestIGConvergence?.top_joint || "—"}
+                detail={
+                  latestIGConvergence
+                    ? `Score: ${formatNumber(
+                        latestIGConvergence.top_joint_score,
+                        6
+                      )}`
+                    : "No convergence data loaded"
+                }
+              />
+              <Metric
+                label="Completeness delta at final run"
+                value={
+                  latestIGConvergence
+                    ? formatNumber(
+                        latestIGConvergence.completeness_delta,
+                        6
+                      )
+                    : "—"
+                }
+                detail="Closer to zero generally indicates better completeness"
+              />
+              <Metric
+                label="Attribution change at final run"
+                value={
+                  finalAttributionChange == null
+                    ? "—"
+                    : formatNumber(finalAttributionChange, 6)
+                }
+                detail="Change from the preceding step count"
+              />
+            </div>
+
+            {igConvergenceRows.length ? (
+              <>
+                <div className="re-controls">
+                  <span>
+                    {igConvergenceRows.length} convergence records
+                  </span>
+                  <DownloadCsv
+                    filename="ig-convergence.csv"
+                    rows={igConvergenceRows}
+                  />
+                </div>
+
+                <div className="re-chart">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={igConvergenceChart}
+                      margin={{
+                        left: 12,
+                        right: 24,
+                        top: 10,
+                        bottom: 10,
+                      }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="stepsLabel" />
+                      <YAxis
+                        yAxisId="delta"
+                        tickFormatter={(value) => formatNumber(value, 3)}
+                      />
+                      <Tooltip
+                        formatter={(value, name) => [
+                          formatNumber(value, 6),
+                          name,
+                        ]}
+                      />
+                      <Legend />
+                      <Line
+                        yAxisId="delta"
+                        type="monotone"
+                        dataKey="completeness_delta"
+                        name="Completeness delta"
+                        stroke="#6d75df"
+                        strokeWidth={2}
+                        connectNulls
+                      />
+                      <Line
+                        yAxisId="delta"
+                        type="monotone"
+                        dataKey="joint_attribution_change"
+                        name="Joint attribution change"
+                        stroke="#159a91"
+                        strokeWidth={2}
+                        connectNulls
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="re-table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>IG steps</th>
+                        <th>Completeness delta</th>
+                        <th>Joint attribution change</th>
+                        <th>Top joint</th>
+                        <th>Top joint score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {igConvergenceRows.map((row) => (
+                        <tr key={row.ig_steps}>
+                          <td>{row.ig_steps}</td>
+                          <td>
+                            {formatNumber(row.completeness_delta, 6)}
+                          </td>
+                          <td>
+                            {row.joint_attribution_change == null
+                              ? "—"
+                              : formatNumber(
+                                  row.joint_attribution_change,
+                                  6
+                                )}
+                          </td>
+                          <td>{row.top_joint || "—"}</td>
+                          <td>{formatNumber(row.top_joint_score, 6)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <p className="re-note">
+                  A smaller attribution-change value suggests the
+                  normalized joint attribution distribution changed less
+                  between successive runs. These measurements help assess
+                  numerical stability; three step counts alone do not
+                  prove full convergence or clinical validity.
+                </p>
+              </>
+            ) : (
+              <p>
+                No IG convergence results loaded. Confirm that
+                <code> ig_convergence.csv </code>
+                is in <code>backend/data/</code> and that the API route
+                <code> /api/explainability/ig-convergence </code>
+                is running.
+              </p>
+            )}
+          </Panel>
+
+          <p className="re-note">
+            Integrated Gradients scores are model attributions, not
+            clinical measures. Absolute attribution magnitude does not
+            indicate whether a feature increases or decreases the selected
+            class score.
+          </p>
+        </>
+      )}
+
+      {section === "methodComparison" && (
+        <>
+          {comparisonError && (
+            <div className="re-warning">
+              Could not load Grad-CAM vs IG comparison: {comparisonError}
+            </div>
+          )}
+
+          {!comparisonSummary && !comparisonError && (
+            <p>Comparison results are not available yet.</p>
+          )}
+
+          {comparisonSummary && (
+            <>
+              <div className="re-metrics">
+                <Metric
+                  label="Matched joints"
+                  value={comparisonSummary.matched_joint_count ?? "—"}
+                  detail="Present in both explanation datasets"
+                />
+                <Metric
+                  label="Spearman rank correlation"
+                  value={formatNumber(
+                    comparisonSummary.spearman_rank_correlation,
+                    4
+                  )}
+                  detail="Similarity of joint rankings"
+                />
+                <Metric
+                  label="Top-five overlap"
+                  value={`${
+                    comparisonSummary.top_5_overlap_count ?? "—"
+                  } / 5`}
+                  detail="Shared top-ranked joints"
+                />
+                <Metric
+                  label="Shared top-five joints"
+                  value={
+                    comparisonSummary.top_5_overlap_joints?.length ?? 0
+                  }
+                  detail="Joint names listed below"
+                />
+              </div>
+
+              <Panel
+                title="Grad-CAM vs Integrated Gradients"
+                subtitle="Compare normalized joint importance and ranking across the joints present in both datasets."
+              >
+                <p>
+                  <strong>Shared top-five joints:</strong>{" "}
+                  {comparisonSummary.top_5_overlap_joints?.join(", ") ||
+                    "None"}
+                </p>
+
+                <div className="re-controls">
+                  <span>
+                    {comparisonRows.length} matched joint records
+                  </span>
+                  <DownloadCsv
+                    filename="gradcam-vs-ig-joint-comparison.csv"
+                    rows={comparisonRows}
+                  />
+                </div>
+
+                {comparisonChartRows.length ? (
+                  <>
+                    <div className="re-chart">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={comparisonChartRows}
+                          margin={{
+                            left: 10,
+                            right: 20,
+                            top: 10,
+                            bottom: 85,
+                          }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis
+                            dataKey="jointLabel"
+                            interval={0}
+                            angle={-40}
+                            textAnchor="end"
+                            height={100}
+                            tick={{ fontSize: 10 }}
+                          />
+                          <YAxis
+                            tickFormatter={(value) =>
+                              formatNumber(value, 3)
+                            }
+                          />
+                          <Tooltip
+                            labelFormatter={(label) => `Joint: ${label}`}
+                            formatter={(value, name) => [
+                              formatNumber(value, 6),
+                              name,
+                            ]}
+                          />
+                          <Legend />
+                          <Bar
+                            dataKey="gradcam_score"
+                            name="Grad-CAM normalized score"
+                            fill="#6d75df"
+                          />
+                          <Bar
+                            dataKey="ig_score"
+                            name="IG normalized score"
+                            fill="#d97757"
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="re-table-wrap">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Joint</th>
+                            <th>Grad-CAM score</th>
+                            <th>Grad-CAM rank</th>
+                            <th>IG score</th>
+                            <th>IG rank</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {comparisonRows.map((row) => (
+                            <tr key={row.joint}>
+                              <td>{row.joint}</td>
+                              <td>
+                                {formatNumber(row.gradcam_score, 6)}
+                              </td>
+                              <td>{row.gradcam_rank}</td>
+                              <td>{formatNumber(row.ig_score, 6)}</td>
+                              <td>{row.ig_rank}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : (
+                  <p>
+                    No matching joints were returned. Check the
+                    comparison API response and ensure the joint names
+                    match between the two datasets.
+                  </p>
+                )}
+
+                <p className="re-note">
+                  IG scores are averaged across the available integration
+                  step counts. Both methods' scores are normalized over
+                  the matched joints by the backend. Rank agreement
+                  indicates similarity between these saved explanations;
+                  it does not establish explanation faithfulness or
+                  clinical validity.
+                </p>
+              </Panel>
+            </>
+          )}
         </>
       )}
 
@@ -374,6 +985,7 @@ export default function ResearchExplorer() {
               rows={consistencyRows}
             />
           </div>
+
           <div className="re-chart">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
@@ -390,10 +1002,15 @@ export default function ResearchExplorer() {
                   tick={{ fontSize: 11 }}
                 />
                 <Tooltip />
-                <Bar dataKey="mean_score" name="Mean score" fill="#159a91" />
+                <Bar
+                  dataKey="mean_score"
+                  name="Mean score"
+                  fill="#159a91"
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
+
           <div className="re-table-wrap">
             <table>
               <thead>
@@ -418,6 +1035,7 @@ export default function ResearchExplorer() {
               </tbody>
             </table>
           </div>
+
           <p className="re-note">
             Scope: search19, fold 1. These results do not establish
             seven-fold consistency.
@@ -443,6 +1061,7 @@ export default function ResearchExplorer() {
                 ))}
               </select>
             </label>
+
             <label>
               Movement window
               <select
@@ -456,6 +1075,7 @@ export default function ResearchExplorer() {
                 ))}
               </select>
             </label>
+
             <DownloadCsv
               filename="filtered-velocity-perturbations.csv"
               rows={filteredVelocity}
@@ -472,8 +1092,9 @@ export default function ResearchExplorer() {
               value={formatNumber(
                 Math.max(
                   0,
-                  ...filteredVelocity.map((row) =>
-                    Number(row["Mean absolute score change"]) || 0
+                  ...filteredVelocity.map(
+                    (row) =>
+                      Number(row["Mean absolute score change"]) || 0
                   )
                 )
               )}
@@ -531,10 +1152,16 @@ export default function ResearchExplorer() {
                     <td>{row.Joint}</td>
                     <td>{row.Factor}</td>
                     <td>
-                      {formatNumber(row["Mean absolute score change"], 7)}
+                      {formatNumber(
+                        row["Mean absolute score change"],
+                        7
+                      )}
                     </td>
                     <td>
-                      {formatNumber(row["Max absolute score change"], 7)}
+                      {formatNumber(
+                        row["Max absolute score change"],
+                        7
+                      )}
                     </td>
                     <td>{formatNumber(row.windowScore, 7)}</td>
                     <td>{formatNumber(row.windowDelta, 7)}</td>
@@ -543,9 +1170,10 @@ export default function ResearchExplorer() {
               </tbody>
             </table>
           </div>
+
           <p className="re-note">
-            These are recorded perturbation results. The dashboard does not run
-            new model inference when a control changes.
+            These are recorded perturbation results. The dashboard does
+            not run new model inference when a control changes.
           </p>
         </Panel>
       )}
@@ -561,6 +1189,7 @@ export default function ResearchExplorer() {
               rows={data.windows}
             />
           </div>
+
           <div className="re-chart">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={windowRows}>
@@ -582,6 +1211,7 @@ export default function ResearchExplorer() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+
           <div className="re-table-wrap">
             <table>
               <thead>
@@ -606,8 +1236,8 @@ export default function ResearchExplorer() {
       )}
 
       <footer className="re-disclaimer">
-        Research prototype only. Results reflect the supplied saved files and
-        should not be interpreted as a clinical diagnosis or validated
+        Research prototype only. Results reflect the supplied saved files
+        and should not be interpreted as a clinical diagnosis or validated
         individual CP-risk probability.
       </footer>
     </div>

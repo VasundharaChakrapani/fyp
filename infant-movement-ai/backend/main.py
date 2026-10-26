@@ -1,7 +1,7 @@
 
 from pathlib import Path
 import json
-
+import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -288,6 +288,99 @@ def get_window_sensitivity():
 
 
 # ---------- Grad-CAM vs perturbation comparison ----------
+@app.get("/api/explainability/integrated-gradients")
+def get_integrated_gradients():
+    data = read_csv_file(
+        DATA_DIR / "ig_joint_attributions.csv",
+        "Integrated Gradients attributions",
+    )
+
+    require_columns(
+        data["columns"],
+        {"joint", "ig_absolute_score", "ig_normalized_score"},
+        "ig_joint_attributions.csv",
+    )
+
+    results = sorted(
+        data["results"],
+        key=lambda row: float(row["ig_absolute_score"] or 0),
+        reverse=True,
+    )
+
+    return {
+        "source": "ig_joint_attributions.csv",
+        "method": "Integrated Gradients",
+        "scope": "First movement window; absolute attributions aggregated over channels and time",
+        "count": len(results),
+        "results": results,
+        "prediction_semantics_verified": False,
+        "clinical_validation": False,
+    }
+
+
+@app.get("/api/explainability/ig-convergence")
+def get_ig_convergence():
+    path = DATA_DIR / "ig_convergence.csv"
+    data = read_csv_file(path, "IG convergence results")
+
+    required_columns = {
+        "ig_steps",
+        "completeness_delta",
+        "joint_attribution_change",
+        "top_joint",
+        "top_joint_score",
+    }
+
+    require_columns(
+        data["columns"],
+        required_columns,
+        "ig_convergence.csv",
+    )
+
+    return {
+        "source": "ig_convergence.csv",
+        "method": "Integrated Gradients",
+        "records": data["results"],
+    }
+
+
+@app.get("/api/explainability/ig-joint-convergence")
+def get_ig_joint_convergence():
+    """Return joint-level IG scores for each integration step count."""
+    data = read_csv_file(
+        DATA_DIR / "ig_convergence_joint_scores.csv",
+        "IG joint convergence scores",
+    )
+
+    required_columns = {
+        "ig_steps",
+        "joint",
+        "ig_normalized_score",
+    }
+
+    require_columns(
+        data["columns"],
+        required_columns,
+        "ig_convergence_joint_scores.csv",
+    )
+
+    results = sorted(
+        data["results"],
+        key=lambda row: (
+            int(row["ig_steps"]),
+            str(row["joint"]),
+        ),
+    )
+
+    return {
+        "source": "ig_convergence_joint_scores.csv",
+        "method": "Integrated Gradients",
+        "scope": "Joint-level attribution scores at each integration step count",
+        "count": len(results),
+        "records": results,
+        "clinical_validation": False,
+    }
+
 
 @app.get("/api/explainability/perturbation-comparison")
 def get_perturbation_comparison():
@@ -624,4 +717,96 @@ def get_research_assets():
             }
             for name in assets
         ]
+    }
+
+@app.get("/api/explainability/method-comparison")
+def compare_explanation_methods():
+    import pandas as pd
+    from scipy.stats import spearmanr
+
+    gradcam_path = DATA_DIR / "gradcam_joint_consistency_search19_fold1.csv"
+    ig_path = DATA_DIR / "ig_convergence_joint_scores.csv"
+
+    if not gradcam_path.exists() or not ig_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Grad-CAM or IG comparison CSV is missing."
+        )
+
+    gradcam = pd.read_csv(gradcam_path)
+    ig = pd.read_csv(ig_path)
+
+    required_gc = {"joint", "mean_score"}
+    required_ig = {"ig_steps", "joint", "ig_normalized_score"}
+
+    if not required_gc.issubset(gradcam.columns):
+        raise HTTPException(400, "Grad-CAM CSV is missing required columns.")
+    if not required_ig.issubset(ig.columns):
+        raise HTTPException(400, "IG CSV is missing required columns.")
+
+    gradcam["joint"] = gradcam["joint"].astype(str).str.strip()
+    ig["joint"] = ig["joint"].astype(str).str.strip()
+
+    # Average each joint's IG score across the available step counts.
+    ig_mean = (
+        ig.groupby("joint", as_index=False)["ig_normalized_score"]
+        .mean()
+        .rename(columns={"ig_normalized_score": "ig_score"})
+    )
+
+    gc = gradcam[["joint", "mean_score"]].rename(
+        columns={"mean_score": "gradcam_score"}
+    )
+
+    # Compare only joints present in both datasets.
+    comparison = gc.merge(ig_mean, on="joint", how="inner")
+
+    if len(comparison) < 2:
+        raise HTTPException(
+            400, "Not enough matching joints to compare the methods."
+        )
+
+    # Normalize each method's scores over the matched joints.
+    for column in ["gradcam_score", "ig_score"]:
+        total = comparison[column].sum()
+        if total <= 0:
+            raise HTTPException(400, f"Cannot normalize {column}.")
+        comparison[column] = comparison[column] / total
+
+    comparison["gradcam_rank"] = (
+        comparison["gradcam_score"].rank(ascending=False, method="min").astype(int)
+    )
+    comparison["ig_rank"] = (
+        comparison["ig_score"].rank(ascending=False, method="min").astype(int)
+    )
+
+    gc_top5 = set(
+        comparison.nsmallest(5, "gradcam_rank")["joint"]
+    )
+    ig_top5 = set(
+        comparison.nsmallest(5, "ig_rank")["joint"]
+    )
+    overlap = sorted(gc_top5 & ig_top5)
+
+    correlation = spearmanr(
+        comparison["gradcam_rank"],
+        comparison["ig_rank"]
+    ).statistic
+
+    comparison = comparison.sort_values("gradcam_rank")
+
+    return {
+        "methods": ["Grad-CAM", "Integrated Gradients"],
+        "matched_joint_count": len(comparison),
+        "spearman_rank_correlation": (
+            float(correlation) if pd.notna(correlation) else None
+        ),
+        "top_5_overlap_count": len(overlap),
+        "top_5_overlap_joints": overlap,
+        "records": comparison.round(6).to_dict(orient="records"),
+        "note": (
+            "IG scores are averaged across available step counts. "
+            "Scores are normalized over matched joints. "
+            "Agreement does not establish explanation faithfulness or clinical validity."
+        ),
     }
