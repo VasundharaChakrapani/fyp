@@ -796,7 +796,7 @@ def compare_explanation_methods():
     comparison = comparison.sort_values("gradcam_rank")
 
     return {
-        "methods": ["Grad-CAM", "Integrated Gradients"],
+        "methods": ["Grad-CAM", "Integrated Gradaients"],
         "matched_joint_count": len(comparison),
         "spearman_rank_correlation": (
             float(correlation) if pd.notna(correlation) else None
